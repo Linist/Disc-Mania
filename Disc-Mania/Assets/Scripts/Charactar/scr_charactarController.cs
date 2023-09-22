@@ -23,12 +23,31 @@ public class scr_charactarController : MonoBehaviour
     public float ViewClampYMin = -70;
     public float ViewClampYMax = 80;
 
+    [Header("Gravity")]
+    public float gravityAmount;
+    public float gravityMin;
+    private float playerGravity;
+
+    public Vector3 jumpingForce;
+    private Vector3 jumpingForceVelocity;
+
+    [Header("Stance")]
+    public PlayerStance playerStance;
+    public float playerStanceSmoothing;
+    public float cameraStandHeight;
+    public float cameraCrouchHeight;
+    public float cameraProneHeight;
+
+    private float cameraHeight;
+    private float cameraHeightVelocity;
+
     private void Awake()
     {
         defaultInput = new Default_inputs();
 
         defaultInput.Character.Movement.performed += e => input_Movement = e.ReadValue<Vector2>();
         defaultInput.Character.View.performed += e => input_View = e.ReadValue<Vector2>();
+        defaultInput.Character.Jump.performed += e => Jump();
 
         defaultInput.Enable();
 
@@ -36,12 +55,16 @@ public class scr_charactarController : MonoBehaviour
         newCharacterRotation = transform.localRotation.eulerAngles;
 
         characterController = GetComponent<CharacterController>();
+
+        cameraHeight = CameraHolder.localPosition.y;
     }
 
     private void Update()
     {
         CalculateView();
         CalculateMovement();
+        CalculateJump();
+        CalculateCameraHeight();
     }
 
     private void CalculateView()
@@ -58,7 +81,6 @@ public class scr_charactarController : MonoBehaviour
 
     private void CalculateMovement()
     {
-
         var verticalSpeed = playerSettings.WalkinForwardSpeed * input_Movement.y * Time.deltaTime;
         var horisontalSpeed = playerSettings.WalkinStafeSpeed * input_Movement.x * Time.deltaTime;
 
@@ -67,5 +89,58 @@ public class scr_charactarController : MonoBehaviour
         newMovementSpeed = transform.TransformDirection(newMovementSpeed);
 
         characterController.Move(newMovementSpeed);
+
+        if(playerGravity > gravityMin)
+        {
+            playerGravity -= gravityAmount * Time.deltaTime;
+        }
+
+        if(playerGravity < -0.1f && characterController.isGrounded) 
+        {
+            playerGravity = -0.1f;
+        }
+
+
+        newMovementSpeed.y += playerGravity;
+        newMovementSpeed += jumpingForce * Time.deltaTime;
+
+        characterController.Move(newMovementSpeed);
     }
+
+    private void CalculateJump()
+    {
+        jumpingForce = Vector3.SmoothDamp(jumpingForce, Vector3.zero, ref jumpingForceVelocity, playerSettings.JumpingFalloff);
+    }
+
+    private void CalculateCameraHeight()
+    {
+        var stanceHeight = cameraStandHeight;
+
+        if( playerStance == PlayerStance.Crouch)
+        {
+            stanceHeight = cameraHeight;
+        }
+
+        if( playerStance == PlayerStance.Prone)
+        {
+            stanceHeight = cameraHeight;
+        }
+
+        cameraHeight = Mathf.SmoothDamp(CameraHolder.localPosition.y, cameraHeight, ref cameraHeightVelocity, playerStanceSmoothing);
+        CameraHolder.localPosition = new Vector3(CameraHolder.localPosition.x, cameraHeight, CameraHolder.localPosition.z);
+    }
+
+    private void Jump()
+    {
+        if(!characterController.isGrounded)
+        {
+            return;
+        }
+
+        //Jump
+        jumpingForce = Vector3.up * playerSettings.JumpingHeigt;
+        playerGravity = 0;
+    }
+
+
 }

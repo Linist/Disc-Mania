@@ -4,12 +4,19 @@ using UnityEngine;
 
 public static class scr_Models
 {
-    #region
+    #region - Player - 
+
+    public enum PlayerStance
+    {
+        Stand,
+        Crouch,
+        Prone
+    }
 
     [Serializable]
     public class PlayerSettingModel 
     {
-        [Header("Settings")]
+        [Header("View Settings")]
         public float ViewXSensitivity;
         public float ViewYSensitivity;
 
@@ -20,6 +27,10 @@ public static class scr_Models
         public float WalkinForwardSpeed;
         public float WalkinStafeSpeed;
         public float WalkinBackwardSpeed;
+
+        [Header("Jumping")]
+        public float JumpingHeigt;
+        public float JumpingFalloff;
     }
 
     #endregion
